@@ -1,14 +1,7 @@
 package com.cosmeticmanager.app.domain
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Face
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.annotation.DrawableRes
+import com.cosmeticmanager.app.R
 
 /**
  * The product categories the user can pick from.
@@ -17,20 +10,19 @@ import androidx.compose.ui.graphics.vector.ImageVector
  * edit later — add or remove entries here and the whole UI (the create/edit dropdown and the list
  * category chips) updates automatically because everything reads from [Category.entries].
  *
- * Each category carries a built-in Compose vector icon, used both on the list category chips and as
- * the leading glyph on each product row. These are stand-ins (any Material icon works) until the
- * real category PNGs are dropped into res/drawable and mapped here. We deliberately use only icons
- * from the always-bundled material-icons-core set, so no extra icon dependency is needed.
+ * Each category carries a drawable resource id ([iconRes]) for its PNG icon in res/drawable. The UI
+ * resolves it with `painterResource(iconRes)`. To change an icon, drop a new PNG into res/drawable
+ * and update the reference here — nothing else needs to change.
  */
 enum class Category(
     val label: String,
-    val icon: ImageVector,
+    @DrawableRes val iconRes: Int,
 ) {
-    HAIR("Hair", Icons.Filled.Person),
-    BODY("Body", Icons.Filled.Favorite),
-    FACE("Face", Icons.Filled.Face),
-    SKINCARE("Skincare", Icons.Filled.Star),
-    MAKEUP("Makeup", Icons.Filled.ThumbUp),
-    FRAGRANCE("Fragrance", Icons.Filled.Place),
-    OTHER("Other", Icons.Filled.Home),
+    HAIR("Hair", R.drawable.hair),
+    BODY("Body", R.drawable.cream),
+    FACE("Face", R.drawable.facecream),
+    SKINCARE("Skincare", R.drawable.skincare),
+    MAKEUP("Makeup", R.drawable.cosmetics),
+    FRAGRANCE("Fragrance", R.drawable.parfum),
+    OTHER("Other", R.drawable.other),
 }

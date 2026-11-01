@@ -1,5 +1,6 @@
 package com.cosmeticmanager.app.ui.detail
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cosmeticmanager.app.data.ServiceLocator
@@ -113,10 +115,10 @@ fun ProductDetailScreen(
                     modifier = Modifier.size(64.dp),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = product.category.icon,
+                        Image(
+                            painter = painterResource(product.category.iconRes),
                             contentDescription = product.category.label,
-                            modifier = Modifier.size(32.dp),
+                            modifier = Modifier.size(40.dp),
                         )
                     }
                 }

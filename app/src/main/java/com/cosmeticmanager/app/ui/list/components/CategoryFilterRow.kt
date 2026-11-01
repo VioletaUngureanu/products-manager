@@ -1,15 +1,16 @@
 package com.cosmeticmanager.app.ui.list.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.cosmeticmanager.app.domain.Category
 
@@ -36,10 +37,10 @@ fun CategoryFilterRow(
                 onClick = { onCategoryClick(category) },
                 label = { Text(category.label) },
                 leadingIcon = {
-                    Icon(
-                        imageVector = category.icon,
+                    Image(
+                        painter = painterResource(category.iconRes),
                         contentDescription = null,
-                        modifier = Modifier.padding(2.dp),
+                        modifier = Modifier.size(20.dp),
                     )
                 },
             )
