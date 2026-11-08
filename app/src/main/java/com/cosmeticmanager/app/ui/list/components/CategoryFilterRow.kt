@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.cosmeticmanager.app.domain.Category
@@ -32,8 +34,9 @@ fun CategoryFilterRow(
         contentPadding = PaddingValues(horizontal = 4.dp),
     ) {
         items(Category.entries.toList(), key = { it.name }) { category ->
+            val isSelected = selected == category
             FilterChip(
-                selected = selected == category,
+                selected = isSelected,
                 onClick = { onCategoryClick(category) },
                 label = { Text(category.label) },
                 leadingIcon = {
@@ -41,6 +44,12 @@ fun CategoryFilterRow(
                         painter = painterResource(category.iconRes),
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
+                        // Tint to match the chip's content colour: light on the selected
+                        // (dark grey) chip, dark on the unselected one.
+                        colorFilter = ColorFilter.tint(
+                            if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer
+                            else MaterialTheme.colorScheme.onSurface,
+                        ),
                     )
                 },
             )

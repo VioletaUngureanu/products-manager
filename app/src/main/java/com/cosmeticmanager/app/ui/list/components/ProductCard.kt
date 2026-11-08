@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -67,10 +68,11 @@ fun ProductCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Leading category glyph in a circular surface (placeholder for category PNGs).
+            // Leading category glyph. The circle behind it uses the SAME colour as the card
+            // (surfaceVariant) so the icon blends onto the card with no contrasting badge.
             Surface(
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface,
+                color = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.size(48.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -78,6 +80,9 @@ fun ProductCard(
                         painter = painterResource(product.category.iconRes),
                         contentDescription = product.category.label,
                         modifier = Modifier.size(32.dp),
+                        // The PNGs are transparent line-art, so tinting recolours just the lines
+                        // to the on-card colour — they read as part of the grey palette.
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant),
                     )
                 }
             }
