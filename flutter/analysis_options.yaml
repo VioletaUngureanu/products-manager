@@ -1,0 +1,10 @@
+# analysis_options.yaml configures the Dart static analyzer (the tool that
+# underlines problems in your editor and runs during `flutter analyze`).
+#
+# We "include" the officially recommended Flutter lint rules from the
+# flutter_lints package declared in pubspec.yaml. This is the standard setup a
+# fresh `flutter create` project ships with, and it enforces the good-practice
+# rules the course cares about (e.g. "prefer const constructors").
+include: package:flutter_lints/flutter.yaml
+
+# No custom overrides: we rely on the recommended defaults.

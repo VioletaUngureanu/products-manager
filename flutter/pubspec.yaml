@@ -1,0 +1,50 @@
+# pubspec.yaml is the project manifest for a Flutter/Dart app.
+# It declares the app name, the Dart/Flutter SDK versions it needs, every
+# third-party package (dependency) and its pinned version, and which asset
+# folders (like images) are bundled into the app.
+#
+# Think of it like Android's build.gradle + a package manager lockfile combined.
+
+name: cosmetic_manager
+description: "CosmeticManager — manage your cosmetics: add, view, edit and delete products."
+# publish_to: 'none' means this app is NOT meant to be published to pub.dev
+# (the public Dart package registry). It is a plain application, not a library.
+publish_to: 'none'
+version: 1.0.0+1 # <human-version>+<build-number>
+
+environment:
+  # The range of Dart SDK versions this project is compatible with.
+  # "^3.7.0" means ">=3.7.0 and <4.0.0".
+  sdk: ^3.7.0
+  # The minimum Flutter version. Chosen to match the professor's project so the
+  # same APIs are available.
+  flutter: '>=3.47.0'
+
+dependencies:
+  flutter:
+    sdk: flutter # The Flutter framework itself, shipped with the SDK (no version here).
+
+  # Riverpod is the state-management library used in the lectures for Flutter.
+  # It holds our app state (the product list, the search query, etc.) outside of
+  # the widgets, so the state survives widget rebuilds and is easy to observe.
+  # Pinned to the 2.x line to match the professor's example exactly.
+  flutter_riverpod: ^2.6.1
+
+dev_dependencies:
+  # Packages only needed while developing/testing, not shipped in the final app.
+  flutter_test:
+    sdk: flutter # The test framework, shipped with the SDK.
+
+  # The official recommended set of Dart/Flutter "lints" (static-analysis rules
+  # that flag likely mistakes and enforce good style). 6.x is the current stable.
+  flutter_lints: ^6.0.0
+
+flutter:
+  # Tells Flutter to include the Material Design icon font and widgets.
+  uses-material-design: true
+
+  # Asset folders bundled into the app. We keep the category PNG images under
+  # assets/categories/. (Drop the PNG files into that folder; the names must
+  # match what CosmeticCategory references in lib/domain/category.dart.)
+  assets:
+    - assets/categories/
