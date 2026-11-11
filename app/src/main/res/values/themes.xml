@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Base theme. The app UI is fully Jetpack Compose + Material 3, so this XML theme only
+        needs to provide a Material 3 parent. Colors are defined in Compose (ui/theme).
+        Using a NoActionBar variant because Compose draws its own TopAppBar.
+    -->
+    <style name="Theme.CosmeticManager" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
