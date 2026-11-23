@@ -1,0 +1,21 @@
+# Gradle / build output
+.gradle/
+build/
+captures/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+local.properties
+
+# Kotlin
+.kotlin/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -1,80 +1,79 @@
+# CosmeticManager — Android (Native UI milestone)
 
-# CosmeticManager: Project Idea
+An Android app for visualizing and managing cosmetics products: keep track of what you own, when
+each product was opened, and when it is about to expire.
 
-#### 1. A short description
-CosmeticManager is an application for visualizing and managing your cosmetics products. The app is meant to be make your life easier, by helping you keep track of the cosmetics you buy, their expiration dates, and your buget. You can use it to add products as you buy them, to view them all, to edit them and to delete them. The app will also help you keep track of your opened products and of their expiration dates. You don't need a 5 in 1 to keep your cosmetics decluttered. You just need CosmeticManager, a bit of time and no stress.
+This repository is the **UI-only / in-memory milestone** of the project (Lab 2, "UI only — Native").
+It implements all four CRUD operations against fake in-memory data, each on its own screen.
+Persistence (local DB) and server sync come in later milestones; the model already carries the
+fields those will need (`lastModified`, `isSynced`), and a "waiting to sync" indicator is shown as a
+placeholder.
 
-#### 2. Domain details
-The app stores one kind of item, a CosmeticProduct.
-Cosmetic product (external fields):
-- name : required
-- description : not required
-- category : required
-- bought date : not required
-- opened date : not required
-- shelf life : required
-- ingredients : not required
+The original project brief is kept in [`docs/PROJECT_IDEA.md`](docs/PROJECT_IDEA.md).
 
-Cosmetic product (internal fields):
-- id
-- last modified date
-- sent to the server
+## Tech stack
 
-#### 3. CRUD
+- **Kotlin** + **Jetpack Compose** (Material 3)
+- **MVVM / UDF**: `ViewModel` + `StateFlow`, immutable `UiState`, unidirectional data flow
+- **Navigation Compose** for separate CRUD screens
+- No Hilt yet (introduced later in the course) — a tiny `ServiceLocator` shares the single
+  repository instance. No Room / networking yet — an `InMemoryProductRepository` is the single
+  source of truth.
 
-Create
+## How to run
 
-    The user can add a new product.
-    The user must provide a name, category, shelf life. The description, bought date, opened date and ingredients are optional and can be left empty.
+1. Open the project folder in **Android Studio** (a recent stable version).
+2. Let it sync Gradle (first sync downloads the Android SDK components if needed).
+3. Run the `app` configuration on an emulator or device (minSdk 24).
 
-Read
+From the command line:
 
-    The user can see:
-    - all your products;
-    - only the unopened products;
-    - only the opened products;
-    - only the products that are about to expire. A product counts as about to expire when it was opened and its shelf life is almost over.
-    The user can also open a single product to see all its details.
+```bash
+./gradlew :app:assembleDebug      # build the debug APK
+./gradlew :app:testDebugUnitTest  # run the unit tests
+```
 
-Update
+## What you can do in the app
 
-    The user can change a product's name, description, category, shelf life and ingredients. The user can also set the opened date if it was empty, but after that it cannot be changed, so the app can reliably calculate how long an opened product stays safe to use.
+- **List ("Your products")** — search, filter by category chip, and switch between the four read
+  views: **All / Unopened / Opened / About to expire**.
+- **Add** — a separate form screen with labelled fields, category dropdown, shelf-life picker
+  (6 / 12 / 24 months or custom), optional bought/opened dates and ingredients, and inline
+  validation.
+- **Edit** — the same form, pre-populated, with the submit button reading **Save**. The opened date
+  is write-once: once set it becomes read-only.
+- **Open a product** — a read-only detail screen showing every field.
+- **Delete** — from the list row's menu or the detail screen, guarded by a confirmation dialog.
 
-Delete
+## Architecture
 
-    The user can delete any product, for example when you have finished it or thrown it away.
+```
+app/src/main/java/com/cosmeticmanager/app/
+├─ domain/        CosmeticProduct, Category, ProductFilter + pure filterProducts()
+├─ data/          ProductRepository (interface) + InMemoryProductRepository + ServiceLocator
+└─ ui/
+   ├─ theme/      Material 3 theme
+   ├─ common/     Reusable, stateless form components (dropdown, date field, shelf-life picker)
+   ├─ list/       ProductListScreen + ViewModel + UiState + row/search/chip components
+   ├─ editor/     ProductEditorScreen + ViewModel + UiState (shared by create & edit)
+   ├─ detail/     ProductDetailScreen (read-only single product)
+   └─ navigation/ CosmeticNavHost (list · create · edit · detail destinations)
+```
 
-#### 4. Persistence details
+State flows **down** (repository → ViewModel → `UiState` → composables) and events flow **up**
+(composables → ViewModel → repository). The list is a `LazyColumn` keyed by product id, so a
+create/update/delete only touches the affected row — the list is never rebuilt by hand.
 
-The products are saved in two places: on the phone, so the app is fast and works without internet, and on the server, so the products list is safe (in case the user loses or changes the phone).
+## How each CRUD operation maps to the grading rubric
 
-Create
+| Operation | Where | Notes |
+|-----------|-------|-------|
+| **Read (list)** | `ui/list/ProductListScreen.kt` | `LazyColumn` driven by a `ViewModel`'s `StateFlow` (observed via `collectAsStateWithLifecycle`). Items keyed by id; only the changed item recomposes. |
+| **Create** | `ui/editor/` | Separate screen. All main fields, every field labelled, validation errors shown in place. Only the new item is added (via the shared repository). |
+| **Update** | `ui/editor/` | Same separate screen, pre-populated, button says **Save**. Product identified by id; only that item changes. |
+| **Delete** | list row menu / detail screen | Confirmation dialog; only the id is passed back to remove the item. |
 
-    it is saved on the phone, when online sent to the server and saved there too
-Read
+## Tests
 
-    always shows the products from the phone storage, when online the app refreshes the list from the server
-Update
-
-    it is saved on the phone, when online sent to the server and saved there too
-Delete
-
-    it is saved on the phone, when online sent to the server and saved there too
-
-#### 5. Offline scenarios
-
-Create
-
-    The user buys a new shampoo and adds it with no internet. It appears in their list right away, with a small "waiting to sync" icon. When the internet comes back, the app sends it to the server on its own and the icon disappears.
-
-Read
-
-    The user opens the app on the train without internet. The user still see all their products and can switch between all, unopened, opened and about to expire. A small message tells them that they're offline and the list may not include changes made from another device.
-
-Update
-
-    The user marks a moisturizer as opened while offline. The change is saved on their phone immediately, and the product shows the "waiting to sync" icon. Once they're back online, the change is sent to the server. The rule that an opened date can't be changed once set applies offline too. If the same product was changed on another device in the meantime, the most recent change is kept.
-
-Delete
-
-    The user deletes a lipstick with no internet. It disappears from their list immediately. The app remembers that it still has to tell the server, and does so when the internet returns. If the app is closed in the meantime, the deletion is not lost.
+`app/src/test/.../ProductFilterTest.kt` unit-tests the pure `filterProducts(query, filter, category)`
+helper (search, the four read views, category narrowing) — fast, no device needed.
