@@ -14,7 +14,9 @@ import java.time.temporal.ChronoUnit
  */
 data class CosmeticProduct(
     // --- internal fields ---
-    val id: String,
+    // The database owns this id. 0 means "not persisted yet" — Room assigns the real
+    // value on insert (rubric: the id is managed by the DB; the user never sees it).
+    val id: Long = NO_ID,
     val lastModified: LocalDate = LocalDate.now(),
     // "sent to the server" — kept in the model so the list can show a "waiting to sync" icon.
     // In this UI-only milestone nothing actually syncs; every locally-made change starts unsynced.
@@ -56,5 +58,8 @@ data class CosmeticProduct(
 
     companion object {
         const val ABOUT_TO_EXPIRE_THRESHOLD_DAYS: Long = 30
+
+        /** Id of a product that has not been stored yet; the database replaces it on insert. */
+        const val NO_ID: Long = 0L
     }
 }

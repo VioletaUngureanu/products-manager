@@ -32,6 +32,13 @@ data class ProductEditorUiState(
     val categoryError: String? = null,
     val shelfLifeError: String? = null,
 
+    // Set to true while a save is being written to the database, to disable the button.
+    val isSaving: Boolean = false,
+
+    // A message shown in this screen when the database write itself fails (not a validation
+    // problem) — the rubric wants persistence errors handled in the create/update view.
+    val saveError: String? = null,
+
     // Set to true once a save succeeds so the screen can navigate back.
     val isSaved: Boolean = false,
 ) {

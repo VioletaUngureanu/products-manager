@@ -15,6 +15,9 @@ data class ProductListUiState(
     val searchQuery: String = "",
     val filter: ProductFilter = ProductFilter.ALL,
     val categoryFilter: Category? = null,
+    // A message to show the user when a database operation (e.g. delete) fails. Null when there's
+    // nothing to report. The screen displays it (Snackbar) then calls back to clear it.
+    val errorMessage: String? = null,
 ) {
     /** True when there are products overall but the current search/filter hides them all. */
     val isEmptyBecauseOfFilters: Boolean

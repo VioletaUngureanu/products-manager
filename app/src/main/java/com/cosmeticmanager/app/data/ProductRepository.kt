@@ -4,30 +4,36 @@ import com.cosmeticmanager.app.domain.CosmeticProduct
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Single source of truth for cosmetic products (L03 Repository pattern).
+ * Single source of truth for cosmetic products (L07 Repository pattern).
  *
- * The UI never holds its own copy of the product list — it observes [products] and sends events
- * (add/update/delete) back here. This milestone is UI-only, so the backing store is in memory;
- * swapping in Room + a remote data source later means re-implementing this interface, nothing in
- * the UI layer changes.
+ * The UI never touches the DAO directly — it observes [products] and calls the suspend write
+ * methods below, which run off the main thread. This is the one seam between the UI layer and the
+ * local database; swapping the database for a server later means re-implementing this interface
+ * only, with no change to the UI.
+ *
+ * Write methods return [Result] so the caller (the ViewModel) can show and log a persistence error
+ * instead of crashing — the rubric requires errors handled, presented to the user and logged.
  */
 interface ProductRepository {
 
-    /** The current list of products as an observable stream with an always-available value. */
+    /**
+     * The current list of products as an observable stream with an always-available value.
+     * Backed by a Room `Flow`, so a create/update/delete is reflected here automatically.
+     */
     val products: StateFlow<List<CosmeticProduct>>
 
-    /** Look up a single product by id, or null if it no longer exists. */
-    fun getById(id: String): CosmeticProduct?
+    /** Look up a single product by id, or null if it no longer exists. Runs off the main thread. */
+    suspend fun getById(id: Long): CosmeticProduct?
 
     /**
-     * Add a brand-new product. The repository assigns the id and stamps it unsynced.
-     * @return the stored product (with its generated id)
+     * Insert a brand-new product. The database assigns the id.
+     * @return [Result] with the stored product (carrying its generated id) on success.
      */
-    fun add(product: CosmeticProduct): CosmeticProduct
+    suspend fun add(product: CosmeticProduct): Result<CosmeticProduct>
 
-    /** Replace an existing product (matched by id) with an updated copy. */
-    fun update(product: CosmeticProduct)
+    /** Update an existing product in place (same row, same id — never delete+insert). */
+    suspend fun update(product: CosmeticProduct): Result<Unit>
 
     /** Remove the product with the given id. */
-    fun delete(id: String)
+    suspend fun delete(id: Long): Result<Unit>
 }

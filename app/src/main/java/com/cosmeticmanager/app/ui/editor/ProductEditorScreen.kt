@@ -15,11 +15,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,7 +45,7 @@ import com.cosmeticmanager.app.ui.common.ShelfLifePicker
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductEditorScreen(
-    productId: String?,
+    productId: Long?,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ProductEditorViewModel = viewModel(
@@ -50,14 +53,21 @@ fun ProductEditorScreen(
     ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // After a successful save the ViewModel flips isSaved; navigate back exactly once.
     LaunchedEffect(uiState.isSaved) {
         if (uiState.isSaved) onNavigateBack()
     }
 
+    // When a database write fails, the ViewModel sets saveError; show it to the user here.
+    LaunchedEffect(uiState.saveError) {
+        uiState.saveError?.let { snackbarHostState.showSnackbar(it) }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(uiState.screenTitle) },
@@ -144,6 +154,8 @@ fun ProductEditorScreen(
 
             Button(
                 onClick = viewModel::onSubmit,
+                // Disabled while the write is in flight, so a double-tap can't insert twice.
+                enabled = !uiState.isSaving,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),

@@ -16,11 +16,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,8 +57,8 @@ import com.cosmeticmanager.app.ui.list.components.ProductSearchBar
 @Composable
 fun ProductListScreen(
     onAddProduct: () -> Unit,
-    onEditProduct: (String) -> Unit,
-    onOpenProduct: (String) -> Unit,
+    onEditProduct: (Long) -> Unit,
+    onOpenProduct: (Long) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ProductListViewModel = viewModel(factory = ViewModelFactory()),
 ) {
@@ -63,9 +66,20 @@ fun ProductListScreen(
 
     // Which product (if any) is pending delete confirmation — ephemeral UI state.
     var pendingDelete by remember { mutableStateOf<CosmeticProduct?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // When a delete fails the ViewModel puts a message in uiState.errorMessage; show it once,
+    // then tell the ViewModel it has been shown so it isn't repeated on the next recomposition.
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.onErrorShown()
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = { TopAppBar(title = { Text("Your products") }) },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddProduct) {

@@ -20,8 +20,8 @@ private object Routes {
 
     const val ARG_PRODUCT_ID = "productId"
 
-    fun detail(id: String) = "detail/$id"
-    fun edit(id: String) = "edit/$id"
+    fun detail(id: Long) = "detail/$id"
+    fun edit(id: Long) = "edit/$id"
 }
 
 /**
@@ -52,9 +52,10 @@ fun CosmeticNavHost(
 
         composable(
             route = Routes.EDIT,
-            arguments = listOf(navArgument(Routes.ARG_PRODUCT_ID) { type = NavType.StringType }),
+            arguments = listOf(navArgument(Routes.ARG_PRODUCT_ID) { type = NavType.LongType }),
         ) { entry ->
-            val id = entry.arguments?.getString(Routes.ARG_PRODUCT_ID)
+            // The id is a Long route argument; NavType.LongType parses it for us.
+            val id = entry.arguments?.getLong(Routes.ARG_PRODUCT_ID)
             ProductEditorScreen(
                 productId = id,
                 onNavigateBack = { navController.popBackStack() },
@@ -63,9 +64,10 @@ fun CosmeticNavHost(
 
         composable(
             route = Routes.DETAIL,
-            arguments = listOf(navArgument(Routes.ARG_PRODUCT_ID) { type = NavType.StringType }),
+            arguments = listOf(navArgument(Routes.ARG_PRODUCT_ID) { type = NavType.LongType }),
         ) { entry ->
-            val id = entry.arguments?.getString(Routes.ARG_PRODUCT_ID).orEmpty()
+            val id = entry.arguments?.getLong(Routes.ARG_PRODUCT_ID)
+                ?: com.cosmeticmanager.app.domain.CosmeticProduct.NO_ID
             ProductDetailScreen(
                 productId = id,
                 onNavigateBack = { navController.popBackStack() },

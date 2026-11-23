@@ -27,10 +27,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cosmeticmanager.app.data.ServiceLocator
 import com.cosmeticmanager.app.ui.common.expiryStatusText
 import com.cosmeticmanager.app.ui.common.formatOrDash
+import kotlinx.coroutines.launch
 
 /**
  * Read-only detail view for a single product ("open a product to see all its details").
@@ -51,19 +55,24 @@ import com.cosmeticmanager.app.ui.common.formatOrDash
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetailScreen(
-    productId: String,
+    productId: Long,
     onNavigateBack: () -> Unit,
-    onEdit: (String) -> Unit,
+    onEdit: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val repository = ServiceLocator.productRepository
+    // Reads from the shared, observed products Flow (single source of truth) — never a direct DAO
+    // call or a per-open re-fetch. Finding our row by id in the already-loaded list.
     val products by repository.products.collectAsStateWithLifecycle()
     val product = products.firstOrNull { it.id == productId }
 
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(product?.name ?: "Product") },
@@ -166,9 +175,20 @@ fun ProductDetailScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        repository.delete(product.id)
                         showDeleteDialog = false
-                        onNavigateBack()
+                        // Delete is a database write (suspend): run it in a coroutine, passing only
+                        // the id. On success leave the screen; on failure show (and log, in the
+                        // repository) the error instead of navigating away.
+                        scope.launch {
+                            repository.delete(product.id).fold(
+                                onSuccess = { onNavigateBack() },
+                                onFailure = {
+                                    snackbarHostState.showSnackbar(
+                                        "Couldn't delete the product. Please try again.",
+                                    )
+                                },
+                            )
+                        }
                     },
                 ) { Text("Delete") }
             },

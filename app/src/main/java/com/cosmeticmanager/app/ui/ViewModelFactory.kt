@@ -14,7 +14,7 @@ import com.cosmeticmanager.app.ui.list.ProductListViewModel
  * id of the product being edited (null when creating), passed through here.
  */
 class ViewModelFactory(
-    private val editingProductId: String? = null,
+    private val editingProductId: Long? = null,
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
  * State holder for the product-list screen (L03 ViewModel + StateFlow).
@@ -33,19 +34,25 @@ class ProductListViewModel(
     private val filter = MutableStateFlow(ProductFilter.ALL)
     private val categoryFilter = MutableStateFlow<Category?>(null)
 
+    // Holds a message when a database operation fails (e.g. delete). Folded into uiState below so
+    // the screen can show it; cleared via onErrorShown.
+    private val errorMessage = MutableStateFlow<String?>(null)
+
     val uiState: StateFlow<ProductListUiState> =
         combine(
             repository.products,
             searchQuery,
             filter,
             categoryFilter,
-        ) { allProducts, query, activeFilter, category ->
+            errorMessage,
+        ) { allProducts, query, activeFilter, category, error ->
             ProductListUiState(
                 visibleProducts = allProducts.filterProducts(query, activeFilter, category),
                 totalCount = allProducts.size,
                 searchQuery = query,
                 filter = activeFilter,
                 categoryFilter = category,
+                errorMessage = error,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -64,6 +71,22 @@ class ProductListViewModel(
         if (it == category) null else category
     }
 
-    /** Delete is handled here so the list screen only passes back the id (rubric: pass the id). */
-    fun onDeleteProduct(id: String) = repository.delete(id)
+    /**
+     * Delete is handled here so the list screen only passes back the id (rubric: pass the id).
+     * Runs in viewModelScope (off the main thread, via the suspend repository call). On a database
+     * failure the repository has already logged it; we surface a message for the user. On success
+     * the repository's Flow emits and the row disappears from the list automatically.
+     */
+    fun onDeleteProduct(id: Long) {
+        viewModelScope.launch {
+            repository.delete(id).onFailure {
+                errorMessage.value = "Couldn't delete the product. Please try again."
+            }
+        }
+    }
+
+    /** Called by the screen after it has shown the error, so the same message isn't shown again. */
+    fun onErrorShown() {
+        errorMessage.value = null
+    }
 }

@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    // KSP runs Room's annotation processor at build time to generate the DAO/database code.
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -40,6 +42,12 @@ android {
     }
 }
 
+// Tell Room where to write its generated schema JSON. Committing these files documents the
+// database shape at each version and lets Room verify future migrations against it.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
@@ -55,6 +63,12 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.navigation.compose)
+
+    // Room: local SQLite database (L07). room-ktx adds coroutine + Flow support
+    // (suspend DAO functions and Flow<List<T>> queries). room-compiler is run by KSP.
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     testImplementation(kotlin("test"))
 

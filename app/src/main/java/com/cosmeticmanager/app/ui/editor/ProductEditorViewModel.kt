@@ -1,6 +1,7 @@
 package com.cosmeticmanager.app.ui.editor
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.cosmeticmanager.app.data.ProductRepository
 import com.cosmeticmanager.app.domain.Category
 import com.cosmeticmanager.app.domain.CosmeticProduct
@@ -8,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 /**
@@ -19,31 +21,35 @@ import java.time.LocalDate
  */
 class ProductEditorViewModel(
     private val repository: ProductRepository,
-    private val editingProductId: String?,
+    private val editingProductId: Long?,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProductEditorUiState())
     val uiState: StateFlow<ProductEditorUiState> = _uiState.asStateFlow()
 
     init {
+        // Loading an existing product is a database read, so it runs in a coroutine (off the main
+        // thread). The form stays in its not-yet-loaded state until the row arrives.
         if (editingProductId != null) {
-            val existing = repository.getById(editingProductId)
-            if (existing != null) {
-                _uiState.value = ProductEditorUiState(
-                    isEditMode = true,
-                    isLoaded = true,
-                    name = existing.name,
-                    description = existing.description,
-                    category = existing.category,
-                    boughtDate = existing.boughtDate,
-                    openedDate = existing.openedDate,
-                    shelfLifeMonths = existing.shelfLifeMonths,
-                    ingredients = existing.ingredients,
-                    openedDateLocked = existing.openedDate != null,
-                )
-            } else {
-                // The product was deleted meanwhile; fall back to create mode so we don't crash.
-                _uiState.value = ProductEditorUiState(isLoaded = true)
+            viewModelScope.launch {
+                val existing = repository.getById(editingProductId)
+                if (existing != null) {
+                    _uiState.value = ProductEditorUiState(
+                        isEditMode = true,
+                        isLoaded = true,
+                        name = existing.name,
+                        description = existing.description,
+                        category = existing.category,
+                        boughtDate = existing.boughtDate,
+                        openedDate = existing.openedDate,
+                        shelfLifeMonths = existing.shelfLifeMonths,
+                        ingredients = existing.ingredients,
+                        openedDateLocked = existing.openedDate != null,
+                    )
+                } else {
+                    // The product was deleted meanwhile; fall back to create mode so we don't crash.
+                    _uiState.value = ProductEditorUiState(isLoaded = true)
+                }
             }
         } else {
             _uiState.update { it.copy(isLoaded = true) }
@@ -112,37 +118,57 @@ class ProductEditorViewModel(
         val description = state.description.trim()
         val ingredients = state.ingredients.trim()
 
-        if (state.isEditMode && editingProductId != null) {
-            val existing = repository.getById(editingProductId)
-            if (existing != null) {
-                repository.update(
-                    existing.copy(
+        // The write touches the database, so it runs in a coroutine (off the main thread). We mark
+        // the form as saving, perform create or update, and either flip isSaved (success) or show a
+        // persistence error in this screen (the rubric: errors handled in the create/update view).
+        _uiState.update { it.copy(isSaving = true, saveError = null) }
+        viewModelScope.launch {
+            val result: Result<*> = if (state.isEditMode && editingProductId != null) {
+                val existing = repository.getById(editingProductId)
+                if (existing != null) {
+                    // Update the SAME row: reuse the existing product (same id), change its fields.
+                    repository.update(
+                        existing.copy(
+                            name = name,
+                            description = description,
+                            category = category,
+                            boughtDate = state.boughtDate,
+                            // Preserve a previously-locked opened date; otherwise allow setting once.
+                            openedDate = if (existing.openedDate != null) existing.openedDate else state.openedDate,
+                            shelfLifeMonths = shelfLife,
+                            ingredients = ingredients,
+                        ),
+                    )
+                } else {
+                    // Row vanished (deleted elsewhere); treat the edit as a failure to report.
+                    Result.failure<Unit>(IllegalStateException("Product no longer exists"))
+                }
+            } else {
+                // Create: id stays NO_ID (0); the repository/DB assigns the real id.
+                repository.add(
+                    CosmeticProduct(
                         name = name,
                         description = description,
                         category = category,
                         boughtDate = state.boughtDate,
-                        // Preserve a previously-locked opened date; otherwise allow setting it once.
-                        openedDate = if (existing.openedDate != null) existing.openedDate else state.openedDate,
+                        openedDate = state.openedDate,
                         shelfLifeMonths = shelfLife,
                         ingredients = ingredients,
                     ),
                 )
             }
-        } else {
-            repository.add(
-                CosmeticProduct(
-                    id = "", // assigned by the repository
-                    name = name,
-                    description = description,
-                    category = category,
-                    boughtDate = state.boughtDate,
-                    openedDate = state.openedDate,
-                    shelfLifeMonths = shelfLife,
-                    ingredients = ingredients,
-                ),
+
+            result.fold(
+                onSuccess = { _uiState.update { it.copy(isSaving = false, isSaved = true) } },
+                onFailure = {
+                    _uiState.update {
+                        it.copy(
+                            isSaving = false,
+                            saveError = "Couldn't save the product. Please try again.",
+                        )
+                    }
+                },
             )
         }
-
-        _uiState.update { it.copy(isSaved = true) }
     }
 }
